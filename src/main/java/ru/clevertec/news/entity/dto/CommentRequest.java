@@ -11,21 +11,14 @@ import lombok.Setter;
 
 import java.util.UUID;
 
-@Getter
-@Setter
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class CommentRequest {
+public record CommentRequest(
 
     @NotBlank
     @Size(min = 1, max = 500)
-    String text;
+    String text,
 
     @NotNull
-    UserRequest user;
-
-    @NotNull
-    Long newsId;
-}
+    Long newsId
+){}
 

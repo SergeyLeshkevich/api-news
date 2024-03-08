@@ -6,18 +6,13 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
-@Getter
-@Setter
-public class NewsRequest {
+public record NewsRequest(
 
-    @NotBlank
-    @Size(min = 1, max = 50)
-  private  String title;
+        @NotBlank
+        @Size(min = 1, max = 50)
+        String title,
 
-    @NotBlank
-    @Size(min = 1, max = 2000)
-   private String text;
-
-    @NotNull
-    UserRequest user;
+        @NotBlank
+        @Size(min = 1, max = 2000)
+        String text) {
 }
