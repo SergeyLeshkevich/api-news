@@ -1,0 +1,8 @@
+ru.clevertec.news
+ru.clevertec.news.aop.comment
+ru.clevertec.news.aop.news
+ru.clevertec.news.config
+ru.clevertec.news.controller
+ru.clevertec.news.entity.dto
+ru.clevertec.news.service
+ru.clevertec.news.util

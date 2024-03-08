@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"ru.clevertec.news"},{"l":"ru.clevertec.news.aop.comment"},{"l":"ru.clevertec.news.aop.news"},{"l":"ru.clevertec.news.config"},{"l":"ru.clevertec.news.controller"},{"l":"ru.clevertec.news.entity.dto"},{"l":"ru.clevertec.news.service"},{"l":"ru.clevertec.news.util"}];updateSearchResults();
