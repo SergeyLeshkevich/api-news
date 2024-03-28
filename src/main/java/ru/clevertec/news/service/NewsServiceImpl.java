@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -13,10 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import ru.clevertec.exceptionhandlerstarter.entity.IncorrectData;
 import ru.clevertec.exceptionhandlerstarter.exception.AccessDeniedException;
 import ru.clevertec.exceptionhandlerstarter.exception.MicroserviceResponseException;
 import ru.clevertec.exceptionhandlerstarter.exception.ParsJsonException;
-import ru.clevertec.exceptionhandlerstarter.model.IncorrectData;
 import ru.clevertec.loggingstarter.annotation.Loggable;
 import ru.clevertec.news.entity.dto.CommentResponse;
 import ru.clevertec.news.entity.dto.ModifyCommentRequest;
@@ -40,11 +40,8 @@ import java.util.function.Function;
  */
 @Service
 @Loggable
-@RequiredArgsConstructor
 public class NewsServiceImpl implements NewsService {
 
-    private static final String HTTP_SCHEME = "http";
-    private static final String NEWS_SERVICE_HOST = "news-service";
     private static final String PAGE_SIZE_PARAM = "pageSize";
     private static final String NUMBER_PAGE_PARAM = "numberPage";
     private static final String SEARCH_PARAM = "search";
@@ -61,7 +58,7 @@ public class NewsServiceImpl implements NewsService {
     /**
      * WebClient builder for making HTTP requests.
      */
-    private final WebClient.Builder webClient;
+    private final WebClient.Builder webClientBuilder;
 
     /**
      * Service for managing comments related to news.
@@ -73,6 +70,13 @@ public class NewsServiceImpl implements NewsService {
      */
     private final ObjectMapper objectMapper;
 
+    public NewsServiceImpl(@Qualifier("webClientBuilderNewsUrl")WebClient.Builder webClientBuilder,
+                           CommentService commentService,
+                           ObjectMapper objectMapper) {
+        this.webClientBuilder = webClientBuilder;
+        this.commentService = commentService;
+        this.objectMapper = objectMapper;
+    }
 
     /**
      * Retrieves a specific news item along with its associated comments.
@@ -84,11 +88,9 @@ public class NewsServiceImpl implements NewsService {
      */
     public Mono<ResponseEntity<NewsResponse>> get(Long id, int pageSizeComments, int numberPageComments) {
 
-        Mono<ResponseEntity<NewsResponse>> monoNews = webClient.build().get()
+        Mono<ResponseEntity<NewsResponse>> monoNews = webClientBuilder.build().get()
                 .uri(uriBuilder ->
-                        uriBuilder.scheme(HTTP_SCHEME)
-                                .host(NEWS_SERVICE_HOST)
-                                .path(NEWS_ID_URL)
+                        uriBuilder.path(NEWS_ID_URL)
                                 .build(id))
                 .exchangeToMono(getClientResponseMonoFunction());
 
@@ -109,11 +111,9 @@ public class NewsServiceImpl implements NewsService {
     @Override
     public Mono<ResponseEntity<NewsResponse>> getFromArchive(Long id, int pageSizeComments, int numberPageComments) {
 
-        Mono<ResponseEntity<NewsResponse>> monoNewsFromArchive = webClient.build().get()
+        Mono<ResponseEntity<NewsResponse>> monoNewsFromArchive = webClientBuilder.build().get()
                 .uri(uriBuilder ->
-                        uriBuilder.scheme(HTTP_SCHEME)
-                                .host(NEWS_SERVICE_HOST)
-                                .path(NEWS_ARCHIVE_ID_URL)
+                        uriBuilder.path(NEWS_ARCHIVE_ID_URL)
                                 .build(id))
                 .exchangeToMono(getClientResponseMonoFunction());
         Mono<ResponseEntity<PaginationResponse<CommentResponse>>> monoComments = commentService
@@ -131,11 +131,9 @@ public class NewsServiceImpl implements NewsService {
      */
     @Override
     public Mono<ResponseEntity<PaginationResponse<NewsResponse>>> getAll(int pageSize, int numberPage) {
-        return webClient.build().get()
+        return webClientBuilder.build().get()
                 .uri(uriBuilder ->
-                        uriBuilder.scheme(HTTP_SCHEME)
-                                .host(NEWS_SERVICE_HOST)
-                                .path(NEWS_URL)
+                        uriBuilder.path(NEWS_URL)
                                 .queryParam(PAGE_SIZE_PARAM, pageSize)
                                 .queryParam(NUMBER_PAGE_PARAM, numberPage)
                                 .build())
@@ -151,11 +149,9 @@ public class NewsServiceImpl implements NewsService {
      */
     @Override
     public Mono<ResponseEntity<PaginationResponse<NewsResponse>>> getAllFromArchive(int pageSize, int numberPage) {
-        return webClient.build().get()
+        return webClientBuilder.build().get()
                 .uri(uriBuilder ->
-                        uriBuilder.scheme(HTTP_SCHEME)
-                                .host(NEWS_SERVICE_HOST)
-                                .path(NEWS_ARCHIVE_URL)
+                        uriBuilder.path(NEWS_ARCHIVE_URL)
                                 .queryParam(PAGE_SIZE_PARAM, pageSize)
                                 .queryParam(NUMBER_PAGE_PARAM, numberPage)
                                 .build())
@@ -178,11 +174,9 @@ public class NewsServiceImpl implements NewsService {
                 .user(new UserRequest(userUuid, userName))
                 .build();
 
-        return webClient.build().post()
+        return webClientBuilder.build().post()
                 .uri(uriBuilder ->
-                        uriBuilder.scheme(HTTP_SCHEME)
-                                .host(NEWS_SERVICE_HOST)
-                                .path(NEWS_URL)
+                        uriBuilder.path(NEWS_URL)
                                 .build()
                 )
                 .contentType(MediaType.APPLICATION_JSON)
@@ -200,10 +194,8 @@ public class NewsServiceImpl implements NewsService {
     @Override
     public Mono<ResponseEntity<NewsResponse>> update(Long id, NewsRequest newsDto, HttpServletRequest request) {
 
-        return webClient.build().get()
-                .uri(uriBuilder -> uriBuilder.scheme(HTTP_SCHEME)
-                        .host(NEWS_SERVICE_HOST)
-                        .path(NEWS_ID_URL)
+        return webClientBuilder.build().get()
+                .uri(uriBuilder -> uriBuilder.path(NEWS_ID_URL)
                         .build(id))
                 .retrieve()
                 .bodyToMono(ModifyNewsRequest.class)
@@ -219,11 +211,9 @@ public class NewsServiceImpl implements NewsService {
                     if (!newsRequest.getUser().getUuid().equals(userUuid)) {
                         return Mono.error(new AccessDeniedException("No access rights"));
                     }
-                    return webClient.build().put()
+                    return webClientBuilder.build().put()
                             .uri(uriBuilder ->
-                                    uriBuilder.scheme(HTTP_SCHEME)
-                                            .host(NEWS_SERVICE_HOST)
-                                            .path(NEWS_ID_URL)
+                                    uriBuilder.path(NEWS_ID_URL)
                                             .build(id)
                             )
                             .contentType(MediaType.APPLICATION_JSON)
@@ -241,10 +231,8 @@ public class NewsServiceImpl implements NewsService {
     @Override
     public Mono<ResponseEntity<Void>> archive(Long id, HttpServletRequest request) {
 
-        Mono<ResponseEntity<Void>> responseEntityMonoNews = webClient.build().get()
-                .uri(uriBuilder -> uriBuilder.scheme(HTTP_SCHEME)
-                        .path(NEWS_ID_URL)
-                        .host(NEWS_SERVICE_HOST)
+        Mono<ResponseEntity<Void>> responseEntityMonoNews = webClientBuilder.build().get()
+                .uri(uriBuilder -> uriBuilder.path(NEWS_ID_URL)
                         .build(id))
                 .retrieve()
                 .bodyToMono(ModifyCommentRequest.class)
@@ -253,10 +241,9 @@ public class NewsServiceImpl implements NewsService {
                     if (!commentRequest.getUser().getUuid().equals(userUuid)) {
                         return Mono.error(new AccessDeniedException("No access rights"));
                     }
-                    return webClient.build().patch()
+                    return webClientBuilder.build().patch()
                             .uri(uriBuilder ->
-                                    uriBuilder.scheme(HTTP_SCHEME)
-                                            .host(NEWS_SERVICE_HOST)
+                                    uriBuilder
                                             .path(NEWS_ID_URL)
                                             .build(id)
                             )
@@ -292,11 +279,9 @@ public class NewsServiceImpl implements NewsService {
      */
     @Override
     public Mono<ResponseEntity<List<NewsResponse>>> search(String searchValue, Integer offset, Integer limit) {
-        return webClient.build().get()
+        return webClientBuilder.build().get()
                 .uri(uriBuilder ->
-                        uriBuilder.scheme(HTTP_SCHEME)
-                                .host(NEWS_SERVICE_HOST)
-                                .path(NEWS_SEARCH_URL)
+                        uriBuilder.path(NEWS_SEARCH_URL)
                                 .queryParam(SEARCH_PARAM, searchValue)
                                 .queryParam(OFFSET_PARAM, offset)
                                 .queryParam(LIMIT_PARAM, limit)

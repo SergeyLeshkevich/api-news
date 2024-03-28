@@ -4,12 +4,11 @@ spring:
       enabled: false
   main:
     allow-circular-references: true
+  application:
+    name: api-news
 server:
   port: 8083
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka
+
 logging:
   level:
     org:
@@ -19,15 +18,14 @@ logging:
             sql:
               BasicBinder: TRACE
         SQL: DEBUG
-
-cache:
-  algorithm: LRU
-  capacity: 5
-
 aop:
   logging:
-    enabled: true
+    enabled: false
 
 exception:
   handling:
+    enabled: false
+
+eureka:
+  client:
     enabled: false

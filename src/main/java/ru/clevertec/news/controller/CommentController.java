@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import reactor.core.publisher.Mono;
-import ru.clevertec.exceptionhandlerstarter.model.IncorrectData;
+import ru.clevertec.exceptionhandlerstarter.entity.IncorrectData;
 import ru.clevertec.news.entity.dto.CommentRequest;
 import ru.clevertec.news.entity.dto.CommentResponse;
 import ru.clevertec.news.util.PaginationResponse;

@@ -4,7 +4,6 @@ package ru.clevertec.news.service;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import reactor.core.publisher.Mono;
-import ru.clevertec.news.entity.dto.CommentResponse;
 import ru.clevertec.news.entity.dto.NewsRequest;
 import ru.clevertec.news.entity.dto.NewsResponse;
 import ru.clevertec.news.util.PaginationResponse;

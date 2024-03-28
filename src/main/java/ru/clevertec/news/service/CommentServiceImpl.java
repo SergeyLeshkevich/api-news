@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -13,10 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import ru.clevertec.exceptionhandlerstarter.entity.IncorrectData;
 import ru.clevertec.exceptionhandlerstarter.exception.AccessDeniedException;
 import ru.clevertec.exceptionhandlerstarter.exception.MicroserviceResponseException;
 import ru.clevertec.exceptionhandlerstarter.exception.ParsJsonException;
-import ru.clevertec.exceptionhandlerstarter.model.IncorrectData;
 import ru.clevertec.loggingstarter.annotation.Loggable;
 import ru.clevertec.news.entity.dto.CommentRequest;
 import ru.clevertec.news.entity.dto.CommentResponse;
@@ -36,11 +36,8 @@ import java.util.function.Function;
  */
 @Service
 @Loggable
-@RequiredArgsConstructor
 public class CommentServiceImpl implements CommentService {
 
-    private static final String HTTP_SCHEME = "http";
-    private static final String COMMENT_SERVICE_HOST = "comment-service";
     private static final String COMMENTS_SEARCH_URL = "/comments/search";
     private static final String SEARCH_PARAM = "search";
     private static final String OFFSET_PARAM = "offset";
@@ -65,6 +62,12 @@ public class CommentServiceImpl implements CommentService {
      */
     private final ObjectMapper objectMapper;
 
+    public CommentServiceImpl(@Qualifier("webClientBuilderCommentsUrl") WebClient.Builder webClientBuilder,
+                              ObjectMapper objectMapper) {
+        this.webClientBuilder = webClientBuilder;
+        this.objectMapper = objectMapper;
+    }
+
     /**
      * Retrieves a specific comment by ID.
      *
@@ -75,10 +78,7 @@ public class CommentServiceImpl implements CommentService {
     public Mono<ResponseEntity<CommentResponse>> get(Long id) {
         return webClientBuilder.build().get()
                 .uri(uriBuilder ->
-                        uriBuilder
-                                .scheme(HTTP_SCHEME)
-                                .host(COMMENT_SERVICE_HOST)
-                                .path(COMMENTS_ID_URL)
+                        uriBuilder.path(COMMENTS_ID_URL)
                                 .build(id)
                 )
                 .exchangeToMono(getClientResponseMonoFunction());
@@ -95,9 +95,7 @@ public class CommentServiceImpl implements CommentService {
     public Mono<ResponseEntity<CommentResponse>> getCommentByNewsId(Long commentId, Long newsId) {
         return webClientBuilder.build().get()
                 .uri(uriBuilder ->
-                        uriBuilder.scheme(HTTP_SCHEME)
-                                .host(COMMENT_SERVICE_HOST)
-                                .path(COMMENTS_COMMENT_ID_NEWS_NEWS_ID_URL)
+                        uriBuilder.path(COMMENTS_COMMENT_ID_NEWS_NEWS_ID_URL)
                                 .build(commentId, newsId)
                 )
                 .exchangeToMono(getClientResponseMonoFunction());
@@ -117,9 +115,7 @@ public class CommentServiceImpl implements CommentService {
                                                                                                     int numberPage) {
         return webClientBuilder.build().get()
                 .uri(uriBuilder ->
-                        uriBuilder.scheme(HTTP_SCHEME)
-                                .host(COMMENT_SERVICE_HOST)
-                                .path(COMMENTS_ARCHIVE_NEWS_ID_URL)
+                        uriBuilder.path(COMMENTS_ARCHIVE_NEWS_ID_URL)
                                 .queryParam(PAGE_SIZE_PARAM, pageSize)
                                 .queryParam(NUMBER_PAGE_PARAM, numberPage)
                                 .build(idNews)
@@ -137,9 +133,7 @@ public class CommentServiceImpl implements CommentService {
     public Mono<ResponseEntity<CommentResponse>> getFromArchive(Long id) {
         return webClientBuilder.build().get()
                 .uri(uriBuilder ->
-                        uriBuilder.scheme(HTTP_SCHEME)
-                                .host(COMMENT_SERVICE_HOST)
-                                .path(COMMENTS_ARCHIVE_ID_URL)
+                        uriBuilder.path(COMMENTS_ARCHIVE_ID_URL)
                                 .build(id)
                 ).exchangeToMono(getClientResponseMonoFunction());
     }
@@ -155,9 +149,7 @@ public class CommentServiceImpl implements CommentService {
     public Mono<ResponseEntity<PaginationResponse<CommentResponse>>> getAll(int pageSize, int numberPage) {
         return webClientBuilder.build().get()
                 .uri(uriBuilder ->
-                        uriBuilder.scheme(HTTP_SCHEME)
-                                .host(COMMENT_SERVICE_HOST)
-                                .path(COMMENTS_URL)
+                        uriBuilder.path(COMMENTS_URL)
                                 .queryParam(PAGE_SIZE_PARAM, pageSize)
                                 .queryParam(NUMBER_PAGE_PARAM, numberPage)
                                 .build()
@@ -176,9 +168,7 @@ public class CommentServiceImpl implements CommentService {
     public Mono<ResponseEntity<PaginationResponse<CommentResponse>>> getAllFromArchive(int pageSize, int numberPage) {
         return webClientBuilder.build().get()
                 .uri(uriBuilder ->
-                        uriBuilder.scheme(HTTP_SCHEME)
-                                .host(COMMENT_SERVICE_HOST)
-                                .path(COMMENTS_ARCHIVE_URL)
+                        uriBuilder.path(COMMENTS_ARCHIVE_URL)
                                 .queryParam(PAGE_SIZE_PARAM, pageSize)
                                 .queryParam(NUMBER_PAGE_PARAM, numberPage)
                                 .build()
@@ -204,9 +194,7 @@ public class CommentServiceImpl implements CommentService {
 
         return webClientBuilder.build().post()
                 .uri(uriBuilder ->
-                        uriBuilder.scheme(HTTP_SCHEME)
-                                .host(COMMENT_SERVICE_HOST)
-                                .path(COMMENTS_URL)
+                        uriBuilder.path(COMMENTS_URL)
                                 .build()
                 )
                 .contentType(MediaType.APPLICATION_JSON)
@@ -224,29 +212,26 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public Mono<ResponseEntity<CommentResponse>> update(Long id, CommentRequest commentDto, HttpServletRequest request) {
         return webClientBuilder.build().get()
-                .uri(uriBuilder -> uriBuilder.scheme(HTTP_SCHEME)
-                        .host(COMMENT_SERVICE_HOST)
-                        .path(COMMENTS_ID_URL)
+                .uri(uriBuilder -> uriBuilder.path(COMMENTS_ID_URL)
                         .build(id))
                 .retrieve()
                 .bodyToMono(ModifyCommentRequest.class)
                 .flatMap(commentRequest -> {
                     UUID userUuid = UUID.fromString(request.getHeader("X-User-UUID"));
                     String userName = request.getHeader("X-User-Name");
+
+                    if (!commentRequest.getUser().getUuid().equals(userUuid)) {
+                        return Mono.error(new AccessDeniedException("No access rights"));
+                    }
+
                     ModifyCommentRequest modifyCommentRequest = ModifyCommentRequest.builder()
                             .text(commentDto.text())
                             .newsId(commentDto.newsId())
                             .user(new UserRequest(userUuid, userName))
                             .build();
 
-                    if (!commentRequest.getUser().getUuid().equals(userUuid)) {
-                        return Mono.error(new AccessDeniedException("No access rights"));
-                    }
                     return webClientBuilder.build().put()
-                            .uri(uriBuilder -> uriBuilder
-                                    .scheme(HTTP_SCHEME)
-                                    .host(COMMENT_SERVICE_HOST)
-                                    .path(COMMENTS_ID_URL)
+                            .uri(uriBuilder -> uriBuilder.path(COMMENTS_ID_URL)
                                     .build(id))
                             .contentType(MediaType.APPLICATION_JSON)
                             .bodyValue(modifyCommentRequest)
@@ -264,9 +249,7 @@ public class CommentServiceImpl implements CommentService {
     public Mono<ResponseEntity<Void>> archive(Long id, HttpServletRequest request) {
 
         return webClientBuilder.build().get()
-                .uri(uriBuilder -> uriBuilder.scheme(HTTP_SCHEME)
-                        .host(COMMENT_SERVICE_HOST)
-                        .path(COMMENTS_ID_URL)
+                .uri(uriBuilder -> uriBuilder.path(COMMENTS_ID_URL)
                         .build(id))
                 .retrieve()
                 .bodyToMono(ModifyCommentRequest.class)
@@ -277,9 +260,7 @@ public class CommentServiceImpl implements CommentService {
                     }
                     return webClientBuilder.build().patch()
                             .uri(uriBuilder ->
-                                    uriBuilder.scheme(HTTP_SCHEME)
-                                            .host(COMMENT_SERVICE_HOST)
-                                            .path(COMMENTS_ID_URL)
+                                    uriBuilder.path(COMMENTS_ID_URL)
                                             .build(id)
                             )
                             .contentType(MediaType.APPLICATION_JSON)
@@ -310,9 +291,7 @@ public class CommentServiceImpl implements CommentService {
 
         return webClientBuilder.build().patch()
                 .uri(uriBuilder ->
-                        uriBuilder.scheme(HTTP_SCHEME)
-                                .host(COMMENT_SERVICE_HOST)
-                                .path(COMMENTS_NEWS_ID_URL)
+                        uriBuilder.path(COMMENTS_NEWS_ID_URL)
                                 .build(newsId)
                 )
                 .contentType(MediaType.APPLICATION_JSON)
@@ -343,9 +322,7 @@ public class CommentServiceImpl implements CommentService {
     public Mono<ResponseEntity<PaginationResponse<CommentResponse>>> getCommentsByIdNews(Long idNews, int pageSize, int numberPage) {
         return webClientBuilder.build().get()
                 .uri(uriBuilder ->
-                        uriBuilder.scheme(HTTP_SCHEME)
-                                .host(COMMENT_SERVICE_HOST)
-                                .path(COMMENTS_NEWS_ID_URL)
+                        uriBuilder.path(COMMENTS_NEWS_ID_URL)
                                 .queryParam(PAGE_SIZE_PARAM, pageSize)
                                 .queryParam(NUMBER_PAGE_PARAM, numberPage)
                                 .build(idNews)
@@ -365,9 +342,7 @@ public class CommentServiceImpl implements CommentService {
     public Mono<ResponseEntity<List<CommentResponse>>> search(String searchValue, Integer offset, Integer limit) {
         return webClientBuilder.build().get()
                 .uri(uriBuilder ->
-                        uriBuilder.scheme(HTTP_SCHEME)
-                                .host(COMMENT_SERVICE_HOST)
-                                .path(COMMENTS_SEARCH_URL)
+                        uriBuilder.path(COMMENTS_SEARCH_URL)
                                 .queryParam(SEARCH_PARAM, searchValue)
                                 .queryParam(OFFSET_PARAM, offset)
                                 .queryParam(LIMIT_PARAM, limit)
